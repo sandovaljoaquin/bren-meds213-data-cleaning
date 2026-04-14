@@ -1,0 +1,121 @@
+---
+title: "week-2-data-cleaning"
+author: "Joaquin Sandoval"
+format: html
+editor: visual
+---
+
+```{r}
+#| message: false  
+
+# Libraries
+library(tidyverse)
+
+starting_snowsurvey_csv <- read_csv(here::here("data", "processed", "snow_cover.csv")) 
+
+glimpse(starting_snowsurvey_csv)
+
+```
+
+```{r}
+# Non numeric values 
+starting_snowsurvey_csv |> 
+  count(Water_cover) |> 
+  filter(is.na(as.numeric(Water_cover)))
+```
+
+```{r}
+water_fixed <- starting_snowsurvey_csv |> 
+  mutate(Water_cover = ifelse(Water_cover == "-", NA, Water_cover), 
+         Water_cover = ifelse(Water_cover == ".", NA, Water_cover),
+         Water_cover = ifelse(Water_cover == "n/a", NA, Water_cover),
+         Water_cover = ifelse(Water_cover == "unk", NA, Water_cover))
+
+water_fixed|> 
+  count(Water_cover) |> 
+  filter(is.na(as.numeric(Water_cover)))
+
+class(water_fixed$Water_cover) 
+```
+
+```{r}
+
+water_fixed <- water_fixed |> 
+  mutate(Water_cover = as.numeric(Water_cover), 
+          Water_cover = ifelse(Water_cover > 100, NA, Water_cover))
+
+class(water_fixed$Water_cover) 
+
+summary(water_fixed$Water_cover)
+
+glimpse(water_fixed)
+```
+
+
+
+```{r}
+# Non numeric values 
+water_fixed |> 
+  count(Land_cover) |> 
+  filter(is.na(as.numeric(Land_cover)))
+```
+
+```{r}
+land_fixed <- water_fixed |> 
+  mutate(Land_cover = ifelse(Land_cover == "-", NA, Land_cover), 
+         Land_cover = ifelse(Land_cover == ".", NA, Land_cover),
+         Land_cover = ifelse(Land_cover == "n/a", NA, Land_cover),
+         Land_cover = ifelse(Land_cover == "unk", NA, Land_cover))
+
+land_fixed|> 
+  count(Land_cover) |> 
+  filter(is.na(as.numeric(Land_cover)))
+
+class(land_fixed$Land_cover) 
+```
+
+```{r}
+
+land_fixed <- land_fixed |> 
+  mutate(Land_cover = as.numeric(Land_cover), 
+          Land_cover = ifelse(Land_cover > 100, NA, Land_cover))
+
+class(land_fixed$Land_cover) 
+
+summary(land_fixed$Land_cover)
+
+glimpse(land_fixed)
+```
+
+
+
+
+
+```{r}
+land_fixed |> 
+  count(Total_cover) |> 
+  filter(is.na(as.numeric(Total_cover)))
+```
+
+```{r}
+total_fixed <- land_fixed|> 
+  mutate(Total_cover = ifelse(Total_cover == "-", NA, Total_cover), 
+         Total_cover = ifelse(Total_cover == ".", NA, Total_cover),
+         Total_cover = ifelse(Total_cover == "n/a", NA, Total_cover),
+         Total_cover = ifelse(Total_cover == "<row r=\\64\\ spans=\\1:11\\ x14ac:dyDescent=\\0.2\\>", NA, Total_cover))
+
+total_fixed|> 
+  count(Total_cover) |> 
+  filter(is.na(as.numeric(Total_cover)))
+
+total_fixed <- total_fixed |> 
+  mutate(Total_cover = as.numeric(Total_cover)) 
+
+class(total_fixed$Total_cover)
+
+```
+
+```{r}
+glimpse(total_fixed)
+```
+
