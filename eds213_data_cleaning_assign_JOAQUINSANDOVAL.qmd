@@ -4,118 +4,204 @@ author: "Joaquin Sandoval"
 format: html
 editor: visual
 ---
-
 ```{r}
 #| message: false  
-
-# Libraries
+ 
 library(tidyverse)
+library(janitor)
 
-starting_snowsurvey_csv <- read_csv(here::here("data", "processed", "snow_cover.csv")) 
+# Read in snow_cover.csv file exported to data/processed which contains a corrected snow_cover column
 
-glimpse(starting_snowsurvey_csv)
+snow_fixed <- read_csv(here::here("data", "processed", "snow_cover.csv")) |> 
+  clean_names()
+
+# View columns and data types of each column 
+
+glimpse(snow_fixed)
 
 ```
+As expected, `snow_cover` is a <dbl>. `water_cover`, `land_cover`, and `total_cover` are <chr> type. This needs to be addressed. 
+
+### Cleaning `water_cover` column 
 
 ```{r}
-# Non numeric values 
-starting_snowsurvey_csv |> 
-  count(Water_cover) |> 
-  filter(is.na(as.numeric(Water_cover)))
+#| warning: false  
+
+# Display non-numeric values in water_cover column 
+
+snow_fixed |> 
+  count(water_cover) |> 
+  filter(is.na(as.numeric(water_cover)))
 ```
+`water_cover` contains "-", ".", "n/a", and "unk" values. This explains why it was <chr> type. 
 
 ```{r}
-water_fixed <- starting_snowsurvey_csv |> 
-  mutate(Water_cover = ifelse(Water_cover == "-", NA, Water_cover), 
-         Water_cover = ifelse(Water_cover == ".", NA, Water_cover),
-         Water_cover = ifelse(Water_cover == "n/a", NA, Water_cover),
-         Water_cover = ifelse(Water_cover == "unk", NA, Water_cover))
+# Individually, convert each non-numeric value in water_cover column to NA values 
+
+water_fixed <- snow_fixed |> 
+  mutate(water_cover = ifelse(water_cover == "-", NA, water_cover), 
+         water_cover = ifelse(water_cover == ".", NA, water_cover),
+         water_cover = ifelse(water_cover == "n/a", NA, water_cover),
+         water_cover = ifelse(water_cover == "unk", NA, water_cover))
+
+# Check that only NA values remain 
 
 water_fixed|> 
-  count(Water_cover) |> 
-  filter(is.na(as.numeric(Water_cover)))
+  count(water_cover) |> 
+  filter(is.na(as.numeric(water_cover)))
 
-class(water_fixed$Water_cover) 
 ```
 
 ```{r}
+# Convert water_cover column to numeric 
 
 water_fixed <- water_fixed |> 
-  mutate(Water_cover = as.numeric(Water_cover), 
-          Water_cover = ifelse(Water_cover > 100, NA, Water_cover))
+  mutate(water_cover = as.numeric(water_cover), 
+         
+         # Convert values greater than 100 to NA 
+         
+          water_cover = ifelse(water_cover > 100, NA, water_cover), 
+         
+         # Convert values less than 0 to NA (precationary measure)
+         
+          water_cover = ifelse(water_cover < 0, NA, water_cover))
 
-class(water_fixed$Water_cover) 
+# Very class of water_cover has been corrected to <dbl>
 
-summary(water_fixed$Water_cover)
+class(water_fixed$water_cover) 
 
-glimpse(water_fixed)
+# Verify values fall between 0 and 100 
+
+summary(water_fixed$water_cover)
+
 ```
 
-
+### 'land_cover` cleaning - repeat same steps as above
 
 ```{r}
-# Non numeric values 
+#| warning: false  
+
+# Display non-numeric values in land_cover colunmn 
+
 water_fixed |> 
-  count(Land_cover) |> 
-  filter(is.na(as.numeric(Land_cover)))
+  count(land_cover) |> 
+  filter(is.na(as.numeric(land_cover)))
+
 ```
 
 ```{r}
+#| warning: false  
+
+# Individually remove non-numeric values 
+
 land_fixed <- water_fixed |> 
-  mutate(Land_cover = ifelse(Land_cover == "-", NA, Land_cover), 
-         Land_cover = ifelse(Land_cover == ".", NA, Land_cover),
-         Land_cover = ifelse(Land_cover == "n/a", NA, Land_cover),
-         Land_cover = ifelse(Land_cover == "unk", NA, Land_cover))
+  mutate(land_cover = ifelse(land_cover == "-", NA, land_cover), 
+         land_cover = ifelse(land_cover == ".", NA, land_cover),
+         land_cover = ifelse(land_cover == "n/a", NA, land_cover),
+         land_cover = ifelse(land_cover == "unk", NA, land_cover))
+
+# Verify that all non-numeric values were converted to NAs
 
 land_fixed|> 
-  count(Land_cover) |> 
-  filter(is.na(as.numeric(Land_cover)))
-
-class(land_fixed$Land_cover) 
+  count(land_cover) |> 
+  filter(is.na(as.numeric(land_cover)))
 ```
 
 ```{r}
+# Convert land_cover to numeric and remove values below 0 and above 100 
 
 land_fixed <- land_fixed |> 
-  mutate(Land_cover = as.numeric(Land_cover), 
-          Land_cover = ifelse(Land_cover > 100, NA, Land_cover))
+  mutate(land_cover = as.numeric(land_cover), 
+          land_cover = ifelse(land_cover > 100, NA, land_cover), 
+          land_cover = ifelse(land_cover < 0, NA, land_cover))
 
-class(land_fixed$Land_cover) 
+# Verify class is numeric 
 
-summary(land_fixed$Land_cover)
+class(land_fixed$land_cover) 
 
-glimpse(land_fixed)
+# Verify values between 0 and 100 
+
+summary(land_fixed$land_cover)
 ```
-
-
-
-
+### `total_cover` cleaning 
 
 ```{r}
+#| warning: false  
+
+# Display all non-numeric values in total_cover column 
+
 land_fixed |> 
-  count(Total_cover) |> 
-  filter(is.na(as.numeric(Total_cover)))
+  count(total_cover) |> 
+  filter(is.na(as.numeric(total_cover)))
 ```
 
 ```{r}
-total_fixed <- land_fixed|> 
-  mutate(Total_cover = ifelse(Total_cover == "-", NA, Total_cover), 
-         Total_cover = ifelse(Total_cover == ".", NA, Total_cover),
-         Total_cover = ifelse(Total_cover == "n/a", NA, Total_cover),
-         Total_cover = ifelse(Total_cover == "<row r=\\64\\ spans=\\1:11\\ x14ac:dyDescent=\\0.2\\>", NA, Total_cover))
+# Individually remove non-numeric values 
+
+total_fixed <- land_fixed |> 
+  mutate(total_cover = ifelse(total_cover == "-", NA, total_cover), 
+         total_cover = ifelse(total_cover == ".", NA, total_cover),
+         total_cover = ifelse(total_cover == "n/a", NA, total_cover),
+         total_cover = ifelse(total_cover == "<row r=\\64\\ spans=\\1:11\\ x14ac:dyDescent=\\0.2\\>", NA, total_cover))
+
+# Verify values were removed 
 
 total_fixed|> 
-  count(Total_cover) |> 
-  filter(is.na(as.numeric(Total_cover)))
-
-total_fixed <- total_fixed |> 
-  mutate(Total_cover = as.numeric(Total_cover)) 
-
-class(total_fixed$Total_cover)
+  count(total_cover) |> 
+  filter(is.na(as.numeric(total_cover)))
 
 ```
 
 ```{r}
-glimpse(total_fixed)
+# Convert total_cover to numeric 
+
+total_fixed <- total_fixed |>
+  mutate(Total_cover = as.numeric(total_cover)) 
+
+# Display unique values; this column should only have 100 or NA
+
+unique(total_fixed$total_cover)
+```
+
+All rows should have cover counts that sum to 100. If there are any NA values in one cover column and not the other 2, we can calculate that value by adding the other two values and subtracting that from 100. 
+
+```{r}
+# Infer missing values and recompute the total_cover column as needed
+
+total_fixed <- total_fixed |>
+  mutate(
+    
+    # Infer missing cover values where one value across snow, water, land columns is NA
+    
+    # When NA value for snow_cover and we have values for water_cover and land_cover
+    # snow_cover = 100 - water_cover - land_cover
+    
+    snow_cover  = ifelse(is.na(snow_cover)  & !is.na(water_cover) & !is.na(land_cover),
+                         100 - water_cover - land_cover, snow_cover),
+    
+     # When NA value for water_cover and we have values for snow_cover and land_cover
+     # water_cover = 100 - snow_cover - land_cover
+    
+    water_cover = ifelse(is.na(water_cover) & !is.na(snow_cover)  & !is.na(land_cover),
+                         100 - snow_cover  - land_cover, water_cover),
+    
+    # When NA value for land_cover and we have values for snow_cover and water_cover
+    # land_cover = 100 - snow_cover - water_cover
+    
+    land_cover  = ifelse(is.na(land_cover)  & !is.na(snow_cover)  & !is.na(water_cover),
+                         100 - snow_cover  - water_cover, land_cover),
+    
+    # Recompute total_cover with corrected values across all 3 columns 
+    
+    total_cover = ifelse(snow_cover + water_cover + land_cover == 100,
+                         100, NA))
+
+```
+
+```{r}
+# Write the file
+
+write_csv(total_fixed, here::here("data", "processed", "all_cover_fixed_JOAQUINSANDOVAL.csv"))
+
 ```
 
