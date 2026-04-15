@@ -156,7 +156,7 @@ total_fixed|>
 # Convert total_cover to numeric 
 
 total_fixed <- total_fixed |>
-  mutate(Total_cover = as.numeric(total_cover)) 
+  mutate(total_cover = as.numeric(total_cover)) 
 
 # Display unique values; this column should only have 100 or NA
 
